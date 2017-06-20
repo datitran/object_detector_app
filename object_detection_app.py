@@ -1,10 +1,10 @@
+import time
 import os
 import cv2
 import numpy as np
 import tensorflow as tf
 
 from utils import FPS
-from PIL import Image
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
 
@@ -26,20 +26,7 @@ categories = label_map_util.convert_label_map_to_categories(label_map, max_num_c
 category_index = label_map_util.create_category_index(categories)
 
 
-# Helper code
-def load_image_into_numpy_array(image):
-    (im_width, im_height) = image.size
-    return np.array(image.getdata()).reshape(
-        (im_height, im_width, 3)).astype(np.uint8)
-
-
-def detect_objects(image_stream, sess, detection_graph):
-    image = Image.fromarray(image_stream)
-
-    # the array based representation of the image will be used later in order to prepare the
-    # result image with boxes and labels on it.
-    image_np = load_image_into_numpy_array(image)
-
+def detect_objects(image_np, sess, detection_graph):
     # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
     image_np_expanded = np.expand_dims(image_np, axis=0)
     image_tensor = detection_graph.get_tensor_by_name('image_tensor:0')
@@ -84,12 +71,19 @@ if __name__ == '__main__':
         sess = tf.Session(graph=detection_graph)
 
     video_capture = cv2.VideoCapture(0)
+    video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, 480)
+    video_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
 
     fps = FPS().start()
 
     while True:
         ret, frame = video_capture.read()
+
+        t = time.time()
+
         cv2.imshow('Video', detect_objects(frame, sess, detection_graph))
+
+        print(time.time() - t)
 
         # update the FPS counter
         fps.update()
