@@ -1,6 +1,6 @@
-import time
 import os
 import cv2
+import argparse
 import multiprocessing
 import numpy as np
 import tensorflow as tf
@@ -85,6 +85,11 @@ def worker(input_q, output_q):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-src', '--source', dest='video_source', type=int,
+                        default=0, help='Device index of the camera.')
+    args = parser.parse_args()
+
     logger = multiprocessing.log_to_stderr()
     logger.setLevel(multiprocessing.SUBDEBUG)
 
@@ -95,19 +100,14 @@ if __name__ == '__main__':
     process.daemon = True
     pool = Pool(NUM_WORKERS, worker, (input_q, output_q))
 
-    video_capture = WebcamVideoStream(src=0).start()
+    video_capture = WebcamVideoStream(src=args.video_source).start()
     fps = FPS().start()
 
     while True:  # fps._numFrames < 120
         frame = video_capture.read()
         input_q.put(frame)
 
-        # t = time.time()
-
         cv2.imshow('Video', output_q.get())
-
-        # print(time.time() - t)
-
         fps.update()
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
