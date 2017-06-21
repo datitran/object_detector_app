@@ -1,10 +1,12 @@
 import time
 import os
 import cv2
+import multiprocessing
 import numpy as np
 import tensorflow as tf
 
 from utils import FPS, WebcamVideoStream
+from multiprocessing import Process, Queue, Pool
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
 
@@ -18,6 +20,9 @@ PATH_TO_CKPT = os.path.join(CWD_PATH, 'object_detection', MODEL_NAME, 'frozen_in
 PATH_TO_LABELS = os.path.join(CWD_PATH, 'object_detection', 'data', 'mscoco_label_map.pbtxt')
 
 NUM_CLASSES = 90
+
+NUM_WORKERS = 2  # cv2.getNumberOfCPUs() - 1
+QUEUE_SIZE = 5
 
 # Loading label map
 label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
@@ -57,7 +62,7 @@ def detect_objects(image_np, sess, detection_graph):
     return image_np
 
 
-if __name__ == '__main__':
+def worker(input_q, output_q):
     # Load a (frozen) Tensorflow model into memory.
     detection_graph = tf.Graph()
     with detection_graph.as_default():
@@ -69,34 +74,48 @@ if __name__ == '__main__':
 
         sess = tf.Session(graph=detection_graph)
 
+    fps = FPS().start()
+    while True:
+        fps.update()
+        frame = input_q.get()
+        output_q.put(detect_objects(frame, sess, detection_graph))
+
+    fps.stop()
+    sess.close()
+
+
+if __name__ == '__main__':
+    logger = multiprocessing.log_to_stderr()
+    logger.setLevel(multiprocessing.SUBDEBUG)
+
+    input_q = Queue(maxsize=QUEUE_SIZE)
+    output_q = Queue(maxsize=QUEUE_SIZE)
+
+    process = Process(target=worker, args=((input_q, output_q)))
+    process.daemon = True
+    pool = Pool(NUM_WORKERS, worker, (input_q, output_q))
+
     video_capture = WebcamVideoStream(src=0).start()
     fps = FPS().start()
 
-    while fps._numFrames < 120:
+    while True:  # fps._numFrames < 120
         frame = video_capture.read()
+        input_q.put(frame)
 
-        t = time.time()
+        # t = time.time()
 
-        # cv2.imshow('Video', detect_objects(frame, sess, detection_graph))
+        cv2.imshow('Video', output_q.get())
 
-        # time.sleep(2)
+        # print(time.time() - t)
 
-        detect_objects(frame, sess, detection_graph)
-
-        print(time.time() - t)
-
-        # update the FPS counter
         fps.update()
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-    # stop the timer and display FPS information
     fps.stop()
     print('[INFO] elasped time: {:.2f}'.format(fps.elapsed()))
     print('[INFO] approx. FPS: {:.2f}'.format(fps.fps()))
 
-    # When everything is done, release the capture
     video_capture.stop()
     cv2.destroyAllWindows()
-    sess.close()
