@@ -38,12 +38,12 @@ class FPS:
 
 
 class WebcamVideoStream:
-    def __init__(self, src=0):
+    def __init__(self, src, width, height):
         # initialize the video camera stream and read the first frame
         # from the stream
         self.stream = cv2.VideoCapture(src)
-        self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, 480)
-        self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
+        self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+        self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
         (self.grabbed, self.frame) = self.stream.read()
 
         # initialize the variable used to indicate if the thread should

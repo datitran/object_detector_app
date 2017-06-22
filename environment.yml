@@ -4,12 +4,11 @@ channels: !!python/tuple
 - defaults
 dependencies:
 - freetype=2.5.5=2
-- hdf5=1.8.17=1
 - jbig=2.1=0
+- jlaura::opencv3=3.0.0=py35_0
 - jpeg=9b=0
 - libpng=1.6.27=0
 - libtiff=4.0.6=3
-- menpo::opencv3=3.1.0=py35_0
 - menpo::tbb=4.3_20141023=0
 - mkl=2017.0.1=0
 - numpy=1.13.0=py35_0

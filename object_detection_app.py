@@ -1,5 +1,6 @@
 import os
 import cv2
+import time
 import argparse
 import multiprocessing
 import numpy as np
@@ -20,9 +21,6 @@ PATH_TO_CKPT = os.path.join(CWD_PATH, 'object_detection', MODEL_NAME, 'frozen_in
 PATH_TO_LABELS = os.path.join(CWD_PATH, 'object_detection', 'data', 'mscoco_label_map.pbtxt')
 
 NUM_CLASSES = 90
-
-NUM_WORKERS = 2  # cv2.getNumberOfCPUs() - 1
-QUEUE_SIZE = 5
 
 # Loading label map
 label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
@@ -88,33 +86,47 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-src', '--source', dest='video_source', type=int,
                         default=0, help='Device index of the camera.')
+    parser.add_argument('-wd', '--width', dest='width', type=int,
+                        default=480, help='Width of the frames in the video stream.')
+    parser.add_argument('-ht', '--height', dest='height', type=int,
+                        default=360, help='Height of the frames in the video stream.')
+    parser.add_argument('-num-w', '--num-workers', dest='num_workers', type=int,
+                        default=2, help='Number of workers.')
+    parser.add_argument('-q-size', '--queue-size', dest='queue_size', type=int,
+                        default=5, help='Size of the queue.')
     args = parser.parse_args()
 
     logger = multiprocessing.log_to_stderr()
     logger.setLevel(multiprocessing.SUBDEBUG)
 
-    input_q = Queue(maxsize=QUEUE_SIZE)
-    output_q = Queue(maxsize=QUEUE_SIZE)
+    input_q = Queue(maxsize=args.queue_size)
+    output_q = Queue(maxsize=args.queue_size)
 
     process = Process(target=worker, args=((input_q, output_q)))
     process.daemon = True
-    pool = Pool(NUM_WORKERS, worker, (input_q, output_q))
+    pool = Pool(args.num_workers, worker, (input_q, output_q))
 
-    video_capture = WebcamVideoStream(src=args.video_source).start()
+    video_capture = WebcamVideoStream(src=args.video_source,
+                                      width=args.width,
+                                      height=args.height).start()
     fps = FPS().start()
 
     while True:  # fps._numFrames < 120
         frame = video_capture.read()
         input_q.put(frame)
 
+        t = time.time()
+
         cv2.imshow('Video', output_q.get())
         fps.update()
+
+        print('[INFO] elapsed time: {:.2f}'.format(time.time() - t))
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
     fps.stop()
-    print('[INFO] elasped time: {:.2f}'.format(fps.elapsed()))
+    print('[INFO] elapsed time (total): {:.2f}'.format(fps.elapsed()))
     print('[INFO] approx. FPS: {:.2f}'.format(fps.fps()))
 
     video_capture.stop()
