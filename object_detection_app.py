@@ -7,7 +7,7 @@ import numpy as np
 import tensorflow as tf
 
 from utils import FPS, WebcamVideoStream
-from multiprocessing import Process, Queue, Pool
+from multiprocessing import Queue, Pool
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
 
@@ -101,9 +101,6 @@ if __name__ == '__main__':
 
     input_q = Queue(maxsize=args.queue_size)
     output_q = Queue(maxsize=args.queue_size)
-
-    process = Process(target=worker, args=((input_q, output_q)))
-    process.daemon = True
     pool = Pool(args.num_workers, worker, (input_q, output_q))
 
     video_capture = WebcamVideoStream(src=args.video_source,
@@ -129,5 +126,6 @@ if __name__ == '__main__':
     print('[INFO] elapsed time (total): {:.2f}'.format(fps.elapsed()))
     print('[INFO] approx. FPS: {:.2f}'.format(fps.fps()))
 
+    pool.terminate()
     video_capture.stop()
     cv2.destroyAllWindows()
