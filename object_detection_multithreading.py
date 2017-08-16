@@ -7,9 +7,8 @@ import tensorflow as tf
 
 from queue import Queue
 from threading import Thread
-from utils import FPS, WebcamVideoStream
+from utils import FPS, WebcamVideoStream, draw_boxes_and_labels
 from object_detection.utils import label_map_util
-from object_detection.utils import visualization_utils as vis_util
 
 CWD_PATH = os.getcwd()
 
@@ -49,15 +48,12 @@ def detect_objects(image_np, sess, detection_graph):
         feed_dict={image_tensor: image_np_expanded})
 
     # Visualization of the results of a detection.
-    vis_util.visualize_boxes_and_labels_on_image_array(
-        image_np,
+    rect_points, class_names, class_colors = draw_boxes_and_labels(
         np.squeeze(boxes),
         np.squeeze(classes).astype(np.int32),
         np.squeeze(scores),
-        category_index,
-        use_normalized_coordinates=True,
-        line_thickness=8)
-    return image_np
+        category_index)
+    return dict(rect_points=rect_points, class_names=class_names, class_colors=class_colors)
 
 
 def worker(input_q, output_q):
@@ -114,8 +110,17 @@ if __name__ == '__main__':
             cv2.imshow('Video', frame)
         else:
             # TO-DO need to draw the boxes here
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            data = output_q.get()
+            rec_points = data['rect_points']
+            class_names = data['class_names']
+            class_colors = data['class_colors']
+            for point, name, color in zip(rec_points, class_names, class_colors):
+                cv2.rectangle(frame, (int(point[1] * args.width), int(point[0] * args.height)),
+                              (int(point[3] * args.width), int(point[2] * args.height)), color, 3)
+                cv2.putText(frame, name[0], (int(point[1] * args.width), int(point[0] * args.height)), font, 0.5,
+                            (0, 0, 0), 1)
             cv2.imshow('Video', frame)
-            print(output_q.get())
 
         fps.update()
 
