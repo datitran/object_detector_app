@@ -6,7 +6,7 @@ import os
 import numpy as np
 import tensorflow as tf
 
-from utils import FPS
+from utils.app_utils import FPS
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
 

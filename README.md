@@ -12,6 +12,11 @@ A real-time object recognition application using [Google's TensorFlow Object Det
     * Number of workers `--num-workers=2`
     * Size of the queue `--queue-size=5`
 
+## Tests
+```
+pytest -vs utils/
+```
+
 ## Requirements
 - [Anaconda / Python 3.5](https://www.continuum.io/downloads)
 - [TensorFlow 1.2](https://www.tensorflow.org/)

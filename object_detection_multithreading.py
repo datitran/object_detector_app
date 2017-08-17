@@ -7,7 +7,7 @@ import tensorflow as tf
 
 from queue import Queue
 from threading import Thread
-from utils import FPS, WebcamVideoStream, draw_boxes_and_labels
+from utils.app_utils import FPS, WebcamVideoStream, draw_boxes_and_labels
 from object_detection.utils import label_map_util
 
 CWD_PATH = os.getcwd()
@@ -49,10 +49,12 @@ def detect_objects(image_np, sess, detection_graph):
 
     # Visualization of the results of a detection.
     rect_points, class_names, class_colors = draw_boxes_and_labels(
-        np.squeeze(boxes),
-        np.squeeze(classes).astype(np.int32),
-        np.squeeze(scores),
-        category_index)
+        boxes=np.squeeze(boxes),
+        classes=np.squeeze(classes).astype(np.int32),
+        scores=np.squeeze(scores),
+        category_index=category_index,
+        min_score_thresh=.5
+    )
     return dict(rect_points=rect_points, class_names=class_names, class_colors=class_colors)
 
 
@@ -88,7 +90,7 @@ if __name__ == '__main__':
                         default=360, help='Height of the frames in the video stream.')
     args = parser.parse_args()
 
-    input_q = Queue(30)
+    input_q = Queue(5)  # fps is better if queue is higher but then more lags
     output_q = Queue()
     for i in range(1):
         t = Thread(target=worker, args=(input_q, output_q))
@@ -107,19 +109,21 @@ if __name__ == '__main__':
         t = time.time()
 
         if output_q.empty():
-            cv2.imshow('Video', frame)
+            pass  # fill up queue
         else:
-            # TO-DO need to draw the boxes here
             font = cv2.FONT_HERSHEY_SIMPLEX
             data = output_q.get()
             rec_points = data['rect_points']
             class_names = data['class_names']
             class_colors = data['class_colors']
             for point, name, color in zip(rec_points, class_names, class_colors):
-                cv2.rectangle(frame, (int(point[1] * args.width), int(point[0] * args.height)),
-                              (int(point[3] * args.width), int(point[2] * args.height)), color, 3)
-                cv2.putText(frame, name[0], (int(point[1] * args.width), int(point[0] * args.height)), font, 0.5,
-                            (0, 0, 0), 1)
+                cv2.rectangle(frame, (int(point['xmin'] * args.width), int(point['ymin'] * args.height)),
+                              (int(point['xmax'] * args.width), int(point['ymax'] * args.height)), color, 3)
+                cv2.rectangle(frame, (int(point['xmin'] * args.width), int(point['ymin'] * args.height)),
+                              (int(point['xmin'] * args.width) + len(name[0]) * 6,
+                               int(point['ymin'] * args.height) - 10), color, -1, cv2.LINE_AA)
+                cv2.putText(frame, name[0], (int(point['xmin'] * args.width), int(point['ymin'] * args.height)), font,
+                            0.3, (0, 0, 0), 1)
             cv2.imshow('Video', frame)
 
         fps.update()
