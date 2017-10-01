@@ -1,10 +1,10 @@
 # Object-Detector-App
 
-A real-time object recognition application using [Google's TensorFlow Object Detection API](https://github.com/tensorflow/models/tree/master/object_detection) and [OpenCV](http://opencv.org/).
+A real-time object recognition application using [Google's TensorFlow Object Detection API](https://github.com/tensorflow/models/tree/master/research/object_detection) and [OpenCV](http://opencv.org/).
 
 ## Getting Started
 1. `conda env create -f environment.yml`
-2. `python object_detection_app.py` 
+2. `python object_detection_app.py`
     Optional arguments (default value):
     * Device index of the camera `--source=0`
     * Width of the frames in the video stream `--width=480`
