@@ -85,6 +85,7 @@ def worker(input_q, output_q):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('-str', '--stream', dest="is_stream", action="store_true")
     parser.add_argument('-src', '--source', dest='video_source', type=int,
                         default=0, help='Device index of the camera.')
     parser.add_argument('-wd', '--width', dest='width', type=int,
@@ -103,6 +104,12 @@ if __name__ == '__main__':
     input_q = Queue(maxsize=args.queue_size)
     output_q = Queue(maxsize=args.queue_size)
     pool = Pool(args.num_workers, worker, (input_q, output_q))
+
+
+    if (args.is_stream):
+        print('Reading from rtmp stream.')
+    else:
+        print('Reading from webcam.')
 
     video_capture = WebcamVideoStream(src=args.video_source,
                                       width=args.width,
