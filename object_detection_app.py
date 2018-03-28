@@ -85,7 +85,7 @@ def worker(input_q, output_q):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-str', '--stream', dest="is_stream", action="store_true")
+    parser.add_argument('-str', '--stream', dest="stream", action='store', type=str, default=None)
     parser.add_argument('-src', '--source', dest='video_source', type=int,
                         default=0, help='Device index of the camera.')
     parser.add_argument('-wd', '--width', dest='width', type=int,
@@ -106,14 +106,16 @@ if __name__ == '__main__':
     pool = Pool(args.num_workers, worker, (input_q, output_q))
 
 
-    if (args.is_stream):
-        print('Reading from rtmp stream.')
+    if (args.stream):
+        print('Reading from hls stream.')
+        video_capture = HLSVideoStream(src=args.stream).start()
     else:
         print('Reading from webcam.')
-
-    video_capture = WebcamVideoStream(src=args.video_source,
+        video_capture = WebcamVideoStream(src=args.video_source,
                                       width=args.width,
                                       height=args.height).start()
+
+    
     fps = FPS().start()
 
     while True:  # fps._numFrames < 120
