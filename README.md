@@ -11,6 +11,7 @@ A real-time object recognition application using [Google's TensorFlow Object Det
     * Height of the frames in the video stream `--height=360`
     * Number of workers `--num-workers=2`
     * Size of the queue `--queue-size=5`
+    * Get video from HLS stream rather than webcam '--stream=http://somedomain.com/hls/live.m3u8'
 
 ## Tests
 ```
