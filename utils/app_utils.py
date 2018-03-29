@@ -8,6 +8,7 @@ import datetime
 import subprocess as sp
 import json 
 import numpy
+import time
 from threading import Thread
 from matplotlib import colors
 
@@ -70,6 +71,8 @@ class HLSVideoStream:
 			out, err = info.communicate(b"ffprobe -v quiet -print_format json -show_format -show_streams http://52.91.28.88:8080/hls/live.m3u8")
 
 			metadata = json.loads(out.decode('utf-8'))
+			time.sleep(5)
+
 
 		print('SUCCESS: Retrieved stream metadata.')
 
