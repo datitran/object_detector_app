@@ -7,17 +7,17 @@ dependencies:
 - freetype=2.5.5=2
 - icu=54.1=0
 - jbig=2.1=0
-- menpo::opencv3=3.1.0=py35_0
+- menpo::opencv3=3.0.1=py35_0
 - jpeg=9b=0
 - libpng=1.6.27=0
 - libtiff=4.0.6=3
 - matplotlib=2.0.2=np113py35_0
-- menpo::tbb=4.3_20141023=0
+- menpo::tbb
 - mkl=2017.0.1=0
 - numpy=1.13.0=py35_0
 - olefile=0.44=py35_0
 - openssl=1.0.2l=0
-- pillow=4.1.1=py35_0
+- pillow=4.2.1=py35_0
 - pip=9.0.1=py35_1
 - py=1.4.34=py35_0
 - pyparsing=2.2.0=py35_0
@@ -26,7 +26,7 @@ dependencies:
 - python=3.5.3=1
 - python-dateutil=2.6.1=py35_0
 - pytz=2017.2=py35_0
-- qt=5.6.2=2
+- qt=5.6.2
 - readline=6.2=2
 - setuptools=27.2.0=py35_0
 - sip=4.18=py35_0
@@ -44,6 +44,5 @@ dependencies:
   - protobuf==3.3.0
   - tensorflow==1.2.0
   - werkzeug==0.12.2
-  - scipy
 prefix: /Users/datitran/anaconda/envs/object-detection
 

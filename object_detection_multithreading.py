@@ -3,11 +3,13 @@ import cv2
 import time
 import argparse
 import numpy as np
+import subprocess as sp
+import json
 import tensorflow as tf
 
 from queue import Queue
 from threading import Thread
-from utils.app_utils import FPS, WebcamVideoStream, draw_boxes_and_labels
+from utils.app_utils import FPS, HLSVideoStream, WebcamVideoStream, draw_boxes_and_labels
 from object_detection.utils import label_map_util
 
 CWD_PATH = os.getcwd()
@@ -83,22 +85,29 @@ def worker(input_q, output_q):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('-strin', '--stream-input', dest="stream_in", action='store', type=str, default=None)
     parser.add_argument('-src', '--source', dest='video_source', type=int,
                         default=0, help='Device index of the camera.')
     parser.add_argument('-wd', '--width', dest='width', type=int,
-                        default=480, help='Width of the frames in the video stream.')
+                        default=640, help='Width of the frames in the video stream.')
     parser.add_argument('-ht', '--height', dest='height', type=int,
-                        default=360, help='Height of the frames in the video stream.')
+                        default=480, help='Height of the frames in the video stream.')
+    parser.add_argument('-strout','--stream-output', dest="stream_out", help='The URL to send the livestreamed object detection to.')
     args = parser.parse_args()
 
-    input_q = Queue(5)  # fps is better if queue is higher but then more lags
+    input_q = Queue(1)  # fps is better if queue is higher but then more lags
     output_q = Queue()
     for i in range(1):
         t = Thread(target=worker, args=(input_q, output_q))
         t.daemon = True
         t.start()
 
-    video_capture = WebcamVideoStream(src=args.video_source,
+    if (args.stream_in):
+        print('Reading from hls stream.')
+        video_capture = HLSVideoStream(src=args.stream_in).start()
+    else:
+        print('Reading from webcam.')
+        video_capture = WebcamVideoStream(src=args.video_source,
                                       width=args.width,
                                       height=args.height).start()
     fps = FPS().start()
@@ -125,7 +134,10 @@ if __name__ == '__main__':
                                int(point['ymin'] * args.height) - 10), color, -1, cv2.LINE_AA)
                 cv2.putText(frame, name[0], (int(point['xmin'] * args.width), int(point['ymin'] * args.height)), font,
                             0.3, (0, 0, 0), 1)
-            cv2.imshow('Video', frame)
+            if args.stream_out:
+                print('Streaming elsewhere!')
+            else:
+                cv2.imshow('Video', frame)
 
         fps.update()
 
