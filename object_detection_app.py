@@ -6,7 +6,13 @@ import multiprocessing
 import numpy as np
 import tensorflow as tf
 
-from utils.app_utils import FPS, WebcamVideoStream, HLSVideoStream
+from utils.app_utils import (
+    FPS,
+    WebcamVideoStream,
+    HLSVideoStream,
+    count_detected_objects,
+    draw_count_panel,
+)
 from multiprocessing import Queue, Pool
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
@@ -48,15 +54,26 @@ def detect_objects(image_np, sess, detection_graph):
         [boxes, scores, classes, num_detections],
         feed_dict={image_tensor: image_np_expanded})
 
+    squeezed_boxes = np.squeeze(boxes)
+    squeezed_scores = np.squeeze(scores)
+    squeezed_classes = np.squeeze(classes).astype(np.int32)
+    object_counts = count_detected_objects(
+        classes=squeezed_classes,
+        scores=squeezed_scores,
+        category_index=category_index,
+        min_score_thresh=.5,
+    )
+
     # Visualization of the results of a detection.
     vis_util.visualize_boxes_and_labels_on_image_array(
         image_np,
-        np.squeeze(boxes),
-        np.squeeze(classes).astype(np.int32),
-        np.squeeze(scores),
+        squeezed_boxes,
+        squeezed_classes,
+        squeezed_scores,
         category_index,
         use_normalized_coordinates=True,
         line_thickness=8)
+    draw_count_panel(image_np, object_counts)
     return image_np
 
 

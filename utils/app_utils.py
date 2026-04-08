@@ -193,6 +193,71 @@ def color_name_to_rgb():
 	return dict(colors_rgb)
 
 
+def count_detected_objects(classes, scores, category_index, min_score_thresh=.5, max_boxes_to_draw=20):
+	"""Build a per-class count for detections above the confidence threshold."""
+	object_counts = collections.OrderedDict()
+	if not max_boxes_to_draw:
+		max_boxes_to_draw = len(classes)
+	for i in range(min(max_boxes_to_draw, len(classes))):
+		if scores is None or scores[i] > min_score_thresh:
+			class_id = classes[i]
+			if class_id in category_index.keys():
+				class_name = category_index[class_id]['name']
+			else:
+				class_name = 'N/A'
+			object_counts[class_name] = object_counts.get(class_name, 0) + 1
+	return object_counts
+
+
+def build_count_overlay_lines(object_counts):
+	"""Format count data for drawing on the video frame."""
+	total_objects = sum(object_counts.values())
+	lines = ['Objects detected: {}'.format(total_objects)]
+	for class_name, count in object_counts.items():
+		lines.append('{}: {}'.format(class_name, count))
+	return lines
+
+
+def draw_count_panel(frame, object_counts):
+	"""Draw a sidebar summary panel for detected object counts."""
+	lines = build_count_overlay_lines(object_counts)
+	panel_width = min(230, max(170, int(frame.shape[1] * 0.28)))
+	panel_height = min(frame.shape[0] - 20, 26 + (len(lines) * 24))
+	panel_top = 10
+	panel_left = max(10, frame.shape[1] - panel_width - 10)
+	panel_bottom = panel_top + panel_height
+	panel_right = panel_left + panel_width
+
+	overlay = frame.copy()
+	cv2.rectangle(overlay, (panel_left, panel_top), (panel_right, panel_bottom), (22, 27, 34), -1)
+	cv2.addWeighted(overlay, 0.72, frame, 0.28, 0, frame)
+	cv2.rectangle(frame, (panel_left, panel_top), (panel_right, panel_bottom), (84, 97, 110), 1)
+
+	cv2.putText(
+		frame,
+		'Count Summary',
+		(panel_left + 12, panel_top + 22),
+		cv2.FONT_HERSHEY_SIMPLEX,
+		0.55,
+		(240, 245, 250),
+		2,
+		cv2.LINE_AA,
+	)
+	for line_index, text in enumerate(lines):
+		y_position = panel_top + 48 + (line_index * 22)
+		cv2.putText(
+			frame,
+			text,
+			(panel_left + 12, y_position),
+			cv2.FONT_HERSHEY_SIMPLEX,
+			0.5,
+			(225, 232, 238),
+			1,
+			cv2.LINE_AA,
+		)
+	return frame
+
+
 def draw_boxes_and_labels(
 		boxes,
 		classes,
@@ -230,6 +295,13 @@ def draw_boxes_and_labels(
 	box_to_color_map = collections.defaultdict(str)
 	box_to_instance_masks_map = {}
 	box_to_keypoints_map = collections.defaultdict(list)
+	object_counts = count_detected_objects(
+		classes=classes,
+		scores=scores,
+		category_index=category_index,
+		max_boxes_to_draw=max_boxes_to_draw,
+		min_score_thresh=min_score_thresh,
+	)
 	if not max_boxes_to_draw:
 		max_boxes_to_draw = boxes.shape[0]
 	for i in range(min(max_boxes_to_draw, boxes.shape[0])):
@@ -269,4 +341,4 @@ def draw_boxes_and_labels(
 		rect_points.append(dict(ymin=ymin, xmin=xmin, ymax=ymax, xmax=xmax))
 		class_names.append(box_to_display_str_map[box])
 		class_colors.append(color_rgb[color.lower()])
-	return rect_points, class_names, class_colors
+	return rect_points, class_names, class_colors, object_counts

@@ -9,7 +9,13 @@ import tensorflow as tf
 
 from queue import Queue
 from threading import Thread
-from utils.app_utils import FPS, HLSVideoStream, WebcamVideoStream, draw_boxes_and_labels
+from utils.app_utils import (
+    FPS,
+    HLSVideoStream,
+    WebcamVideoStream,
+    draw_count_panel,
+    draw_boxes_and_labels,
+)
 from object_detection.utils import label_map_util
 
 CWD_PATH = os.getcwd()
@@ -50,14 +56,19 @@ def detect_objects(image_np, sess, detection_graph):
         feed_dict={image_tensor: image_np_expanded})
 
     # Visualization of the results of a detection.
-    rect_points, class_names, class_colors = draw_boxes_and_labels(
+    rect_points, class_names, class_colors, object_counts = draw_boxes_and_labels(
         boxes=np.squeeze(boxes),
         classes=np.squeeze(classes).astype(np.int32),
         scores=np.squeeze(scores),
         category_index=category_index,
         min_score_thresh=.5
     )
-    return dict(rect_points=rect_points, class_names=class_names, class_colors=class_colors)
+    return dict(
+        rect_points=rect_points,
+        class_names=class_names,
+        class_colors=class_colors,
+        object_counts=object_counts,
+    )
 
 
 def worker(input_q, output_q):
@@ -126,6 +137,7 @@ if __name__ == '__main__':
             rec_points = data['rect_points']
             class_names = data['class_names']
             class_colors = data['class_colors']
+            object_counts = data['object_counts']
             for point, name, color in zip(rec_points, class_names, class_colors):
                 cv2.rectangle(frame, (int(point['xmin'] * args.width), int(point['ymin'] * args.height)),
                               (int(point['xmax'] * args.width), int(point['ymax'] * args.height)), color, 3)
@@ -134,6 +146,7 @@ if __name__ == '__main__':
                                int(point['ymin'] * args.height) - 10), color, -1, cv2.LINE_AA)
                 cv2.putText(frame, name[0], (int(point['xmin'] * args.width), int(point['ymin'] * args.height)), font,
                             0.3, (0, 0, 0), 1)
+            draw_count_panel(frame, object_counts)
             if args.stream_out:
                 print('Streaming elsewhere!')
             else:
